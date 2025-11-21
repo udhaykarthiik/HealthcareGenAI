@@ -99,10 +99,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 👨‍💻 Author
 
-**Udhay Karthik**
+**Udhay Karthik** **Muhammed Riyas** **VijaySarathi**
 
 - LinkedIn: https://www.linkedin.com/in/udhaykarthik/
-
+- LinkedIn: https://www.linkedin.com/in/-riyas-m
+- LinkedIn: https://www.linkedin.com/in/vijay-sarathi-r-s
 ---
 
 ## 🙏 Acknowledgments
