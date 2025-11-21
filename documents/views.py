@@ -1,3 +1,4 @@
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -6,6 +7,9 @@ from .models import Document
 from .services import DocumentProcessingService
 import markdown2
 
+from django.shortcuts import get_object_or_404
+from .services import DocumentProcessingService
+from datetime import datetime
 
 def home(request):
     """Landing page for the application"""
@@ -56,3 +60,12 @@ def summary_detail(request, document_id):
         'summary_html': summary_html,
     })
 
+def download_soap_pdf(request, document_id):
+    """Download SOAP note as PDF"""
+    service = DocumentProcessingService()
+    
+    try:
+        pdf_response = service.generate_soap_pdf(document_id)
+        return pdf_response
+    except Exception as e:
+        return HttpResponse(f"Error: {str(e)}", status=400)

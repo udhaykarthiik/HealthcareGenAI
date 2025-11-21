@@ -1,11 +1,14 @@
 from django.utils import timezone
+from django.http import FileResponse
 from .models import Document, Summary
-from .ai_utils import AgentOrchestrator
+from .ai_utils import AgentOrchestrator, SOAPNoteGenerator
+from datetime import datetime
 
 
 class DocumentProcessingService:
     def __init__(self):
         self.orchestrator = AgentOrchestrator()
+        self.soap_generator = SOAPNoteGenerator()
 
     def process_uploaded_document(self, document_id: int, doc_type: str = "general") -> bool:
         """
@@ -59,3 +62,33 @@ class DocumentProcessingService:
             except:
                 pass
             return False
+
+    def generate_soap_pdf(self, document_id: int) -> FileResponse:
+        """Generate downloadable SOAP note PDF"""
+        
+        try:
+            document = Document.objects.get(id=document_id)
+            summary = Summary.objects.get(document=document)
+            
+            # Prepare document data
+            doc_data = {
+                'filename': document.original_filename,
+                'upload_date': document.uploaded_at.strftime('%Y-%m-%d %H:%M:%S')
+            }
+            
+            # Generate PDF
+            pdf_buffer = self.soap_generator.generate_soap_pdf(
+                doc_data,
+                summary.summary_text,
+                summary.extracted_entities
+            )
+            
+            # Create file response
+            filename = f"SOAP_Note_{document.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+            response = FileResponse(pdf_buffer, content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{filename}"'
+            
+            return response
+            
+        except Exception as e:
+            raise Exception(f"Error generating SOAP PDF: {str(e)}")

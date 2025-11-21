@@ -4,12 +4,22 @@ Uses Google Gemini 2.0 Flash via LangChain for medical document analysis
 """
 
 import os
+import json
 from typing import Dict
+from io import BytesIO
+from datetime import datetime
+
 from pypdf import PdfReader
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from langchain.output_parsers import StructuredOutputParser, ResponseSchema
+
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, KeepTogether
+from reportlab.lib.units import inch
 
 
 class DocumentProcessor:
@@ -354,6 +364,192 @@ Create a clear lab report summary with these sections:
             return response["text"].strip()
         except Exception as e:
             return f"Error generating lab report summary: {str(e)}"
+
+
+class SOAPNoteGenerator:
+    """Generate professional structured SOAP notes as PDF with proper text wrapping"""
+    
+    @staticmethod
+    def _truncate_text(text: str, max_length: int = 100) -> str:
+        """Truncate long text and add ellipsis"""
+        if isinstance(text, str) and len(text) > max_length:
+            return text[:max_length] + "..."
+        return str(text) if text else "Not mentioned"
+    
+    
+    
+    @staticmethod
+    def _clean_text(text: str) -> str:
+        """Remove markdown and special characters"""
+        if not text:
+            return "Not mentioned"
+        text = str(text)
+        text = text.replace('**', '').replace('*', '').replace('##', '').replace('#', '')
+        text = text.replace('[', '').replace(']', '').replace('(', '').replace(')', '')
+        return text.strip()
+    
+    @staticmethod
+    def generate_soap_pdf(document_data: Dict, summary_text: str, entities: Dict) -> BytesIO:
+        """Generate a clean, professional SOAP note PDF"""
+        
+        pdf_buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            pdf_buffer, 
+            pagesize=letter,
+            topMargin=0.5*inch,
+            bottomMargin=0.5*inch,
+            leftMargin=0.75*inch,
+            rightMargin=0.75*inch
+        )
+        
+        styles = getSampleStyleSheet()
+        
+        # Main title
+        title_style = ParagraphStyle(
+            'MainTitle',
+            parent=styles['Heading1'],
+            fontSize=20,
+            textColor=colors.HexColor('#003366'),
+            spaceAfter=2,
+            alignment=1,
+            fontName='Helvetica-Bold'
+        )
+        
+        # Section heading
+        heading_style = ParagraphStyle(
+            'SectionHeading',
+            parent=styles['Heading2'],
+            fontSize=12,
+            textColor=colors.HexColor('#FFFFFF'),
+            backColor=colors.HexColor('#003366'),
+            spaceAfter=10,
+            spaceBefore=10,
+            leftIndent=10,
+            fontName='Helvetica-Bold',
+            borderPadding=8
+        )
+        
+        # Subheading
+        subheading_style = ParagraphStyle(
+            'SubHeading',
+            parent=styles['Normal'],
+            fontSize=10,
+            textColor=colors.HexColor('#003366'),
+            spaceAfter=4,
+            fontName='Helvetica-Bold'
+        )
+        
+        # Body text
+        body_style = ParagraphStyle(
+            'BodyText',
+            parent=styles['BodyText'],
+            fontSize=10,
+            spaceAfter=8,
+            leftIndent=12,
+            leading=14
+        )
+        
+        # Info style
+        info_style = ParagraphStyle(
+            'InfoText',
+            parent=styles['Normal'],
+            fontSize=9,
+            textColor=colors.HexColor('#666666'),
+            spaceAfter=10,
+            alignment=1
+        )
+        
+        story = []
+        
+        # HEADER
+        story.append(Paragraph("SOAP NOTE", title_style))
+        story.append(Paragraph("Clinical Documentation Report", info_style))
+        story.append(Spacer(1, 0.1*inch))
+        
+        # DOCUMENT INFORMATION
+        clean_filename = document_data.get('filename', 'Unknown')
+        clean_date = datetime.now().strftime('%B %d, %Y at %H:%M')
+        
+        info_text = f"Document: {clean_filename}     Generated: {clean_date}"
+        story.append(Paragraph(info_text, info_style))
+        story.append(Spacer(1, 0.2*inch))
+        
+        # PATIENT INFORMATION SECTION
+        story.append(Paragraph("PATIENT INFORMATION", heading_style))
+        patient_info = SOAPNoteGenerator._clean_text(entities.get('patient_info', 'Not mentioned'))
+        story.append(Paragraph(patient_info, body_style))
+        story.append(Spacer(1, 0.1*inch))
+        
+        # SUBJECTIVE SECTION
+        story.append(Paragraph("SUBJECTIVE - Patient Report", heading_style))
+        
+        story.append(Paragraph("Chief Complaint", subheading_style))
+        chief_complaint = SOAPNoteGenerator._clean_text(entities.get('chief_complaint', 'Not mentioned'))
+        story.append(Paragraph(chief_complaint, body_style))
+        
+        story.append(Paragraph("Current Symptoms", subheading_style))
+        symptoms = SOAPNoteGenerator._clean_text(entities.get('symptoms', 'Not mentioned'))
+        story.append(Paragraph(symptoms, body_style))
+        story.append(Spacer(1, 0.1*inch))
+        
+        # OBJECTIVE SECTION
+        story.append(Paragraph("OBJECTIVE - Clinical Findings", heading_style))
+        
+        story.append(Paragraph("Vital Signs", subheading_style))
+        vitals = SOAPNoteGenerator._clean_text(entities.get('vitals', 'Not mentioned'))
+        story.append(Paragraph(vitals, body_style))
+        
+        story.append(Paragraph("Physical Examination Findings", subheading_style))
+        physical_exam = SOAPNoteGenerator._clean_text(entities.get('diagnosis', 'Not mentioned'))
+        story.append(Paragraph(physical_exam, body_style))
+        story.append(Spacer(1, 0.1*inch))
+        
+        # ASSESSMENT SECTION
+        story.append(Paragraph("ASSESSMENT - Clinical Impression", heading_style))
+        
+        story.append(Paragraph("Primary Diagnosis", subheading_style))
+        assessment = SOAPNoteGenerator._clean_text(entities.get('diagnosis', 'Not mentioned'))
+        story.append(Paragraph(assessment, body_style))
+        story.append(Spacer(1, 0.1*inch))
+        
+        # PLAN SECTION
+        story.append(Paragraph("PLAN - Treatment and Follow-up", heading_style))
+        
+        story.append(Paragraph("Treatment Plan", subheading_style))
+        treatment = SOAPNoteGenerator._clean_text(entities.get('treatment_plan', 'Not mentioned'))
+        story.append(Paragraph(treatment, body_style))
+        
+        story.append(Paragraph("Medications Prescribed", subheading_style))
+        medications = SOAPNoteGenerator._clean_text(entities.get('medications', 'Not mentioned'))
+        story.append(Paragraph(medications, body_style))
+        
+        # PAGE BREAK
+        story.append(PageBreak())
+        
+        # FULL SUMMARY
+        story.append(Paragraph("COMPLETE CLINICAL SUMMARY", heading_style))
+        story.append(Spacer(1, 0.1*inch))
+        
+        summary_clean = SOAPNoteGenerator._clean_text(summary_text)
+        story.append(Paragraph(summary_clean, body_style))
+        
+        # FOOTER
+        story.append(Spacer(1, 0.3*inch))
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.HexColor('#999999'),
+            alignment=1
+        )
+        footer_text = "CONFIDENTIAL MEDICAL RECORD - Healthcare AI Assistant - Please review and verify before clinical use"
+        story.append(Paragraph(footer_text, footer_style))
+        
+        doc.build(story)
+        pdf_buffer.seek(0)
+        
+        return pdf_buffer
+
 
 
 class AgentOrchestrator:
