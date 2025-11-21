@@ -100,8 +100,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 👨‍💻 Author
 
 **Udhay Karthik**
-- GitHub: [@YOUR_USERNAME](https://github.com/YOUR_USERNAME)
-- LinkedIn: [Your LinkedIn](https://linkedin.com/in/your-profile)
+
+- LinkedIn: https://www.linkedin.com/in/udhaykarthik/
 
 ---
 
