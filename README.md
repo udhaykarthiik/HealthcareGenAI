@@ -99,8 +99,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 👨‍💻 Author
 
-**Udhay Karthik**
-**Muhammed Riyas**
+**Udhay Karthik** |
+**Muhammed Riyas** |
 **VijaySarathi**
 
 - LinkedIn: https://www.linkedin.com/in/udhaykarthik/
