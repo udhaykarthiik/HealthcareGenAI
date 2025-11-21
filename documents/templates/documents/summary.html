@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Document Summary</h2>
+    <h4>{{ doc.original_filename }}</h4>
+    <p>Status: {{ doc.get_status_display }}</p>
+    <hr />
+    <h5>Extracted Medical Entities</h5>
+    {% if summary %}
+    <ul>
+      {% for key, value in summary.extracted_entities.items %}
+        <li><strong>{{ key|capfirst }}:</strong> {{ value }}</li>
+      {% endfor %}
+    </ul>
+    <hr />
+    <h5>AI-Generated Summary</h5>
+
+    <div style="background:#f7f7f9; padding:1em; border-radius:5px;">
+      {{ summary_html|safe }}
+    </div>
+
+    {% else %}
+    <p>No summary available yet.</p>
+    {% endif %}
+    <a href="{% url 'document_list' %}" class="btn btn-secondary mt-3">Back to Documents</a>
+</div>
+{% endblock %}
