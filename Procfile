@@ -1,0 +1,1 @@
+web: gunicorn healthcore.wsgi:application
