@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% block title %}Document Summary - Healthcare AI Assistant{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            <div class="mb-4">
+                <a href="{% url 'document_list' %}" class="btn btn-secondary">&larr; Back to Documents</a>
+                <a href="{% url 'download_soap_pdf' document.id %}" class="btn btn-primary">Download SOAP PDF</a>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Document Information</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Filename:</strong> {{ document.filename }}</p>
+                            <p><strong>Document Type:</strong> {{ document.get_document_type_display }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Uploaded:</strong> {{ upload_date|date:"Y-m-d H:i:s" }}</p>
+                            <p><strong>Status:</strong> <span class="badge bg-success">{{ document.status }}</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0">Extracted Medical Information</h4>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Patient Information -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">👤 PATIENT INFORMATION</h5>
+                        <div class="ps-3" style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            {% if entities.patient_info %}
+                                {% if entities.patient_info|stringformat:"s" == entities.patient_info %}
+                                    <p class="mb-0">{{ entities.patient_info }}</p>
+                                {% else %}
+                                    <p class="mb-1"><strong>Name:</strong> 
+                                        {% if entities.patient_info.name %}
+                                            {{ entities.patient_info.name }}
+                                        {% elif entities.patient_info.Name %}
+                                            {{ entities.patient_info.Name }}
+                                        {% else %}
+                                            Not mentioned
+                                        {% endif %}
+                                    </p>
+                                    <p class="mb-1"><strong>Age:</strong> 
+                                        {% if entities.patient_info.age %}
+                                            {{ entities.patient_info.age }}
+                                        {% elif entities.patient_info.Age %}
+                                            {{ entities.patient_info.Age }}
+                                        {% else %}
+                                            Not mentioned
+                                        {% endif %}
+                                    </p>
+                                    <p class="mb-1"><strong>Gender:</strong> 
+                                        {% if entities.patient_info.gender %}
+                                            {{ entities.patient_info.gender }}
+                                        {% elif entities.patient_info.Gender %}
+                                            {{ entities.patient_info.Gender }}
+                                        {% else %}
+                                            Not mentioned
+                                        {% endif %}
+                                    </p>
+                                    <p class="mb-0"><strong>Medical Record Number:</strong> 
+                                        {% if entities.patient_info.ID %}
+                                            {{ entities.patient_info.ID }}
+                                        {% elif entities.patient_info.id %}
+                                            {{ entities.patient_info.id }}
+                                        {% elif entities.patient_info.MRN %}
+                                            {{ entities.patient_info.MRN }}
+                                        {% else %}
+                                            Not mentioned
+                                        {% endif %}
+                                    </p>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-muted mb-0">Not mentioned</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Chief Complaint -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">📋 CHIEF COMPLAINT</h5>
+                        <div class="ps-3" style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            <p class="mb-0">
+                                {% if entities.chief_complaint %}
+                                    {{ entities.chief_complaint }}
+                                {% else %}
+                                    Not mentioned
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Symptoms -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">🤕 SYMPTOMS</h5>
+                        <div class="ps-3" style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            {% if entities.symptoms %}
+                                {% if entities.symptoms|stringformat:"s" == entities.symptoms %}
+                                    <p class="mb-0">{{ entities.symptoms }}</p>
+                                {% else %}
+                                    <ul class="mb-0">
+                                        {% for symptom in entities.symptoms %}
+                                            <li>{{ symptom }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-muted mb-0">Not mentioned</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Diagnosis -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">🩺 DIAGNOSIS</h5>
+                        <div class="ps-3" style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            {% if entities.diagnosis %}
+                                {% if entities.diagnosis|stringformat:"s" == entities.diagnosis %}
+                                    <p class="mb-0">{{ entities.diagnosis }}</p>
+                                {% else %}
+                                    <ul class="mb-0">
+                                        {% for diag in entities.diagnosis %}
+                                            <li>{{ diag }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-muted mb-0">Not mentioned</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Medications -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">💊 MEDICATIONS</h5>
+                        <div class="ps-3" style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            {% if entities.medications %}
+                                {% if entities.medications|stringformat:"s" == entities.medications %}
+                                    <p class="mb-0">{{ entities.medications }}</p>
+                                {% else %}
+                                    <table class="table table-sm table-bordered mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Medication</th>
+                                                <th>Dosage</th>
+                                                <th>Frequency</th>
+                                                <th>Route</th>
+                                            </thead>
+                                        <tbody>
+                                            {% for med in entities.medications %}
+                                                <tr>
+                                                    <td>
+                                                        {% if med.medication %}
+                                                            {{ med.medication }}
+                                                        {% elif med.name %}
+                                                            {{ med.name }}
+                                                        {% else %}
+                                                            -
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>{{ med.dosage|default:"-" }}</td>
+                                                    <td>{{ med.frequency|default:"-" }}</td>
+                                                    <td>{{ med.route|default:"PO" }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-muted mb-0">Not mentioned</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Treatment Plan -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">📝 TREATMENT PLAN</h5>
+                        <div class="ps-3" style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            {% if entities.treatment_plan %}
+                                {% if entities.treatment_plan|stringformat:"s" == entities.treatment_plan %}
+                                    <p class="mb-0">{{ entities.treatment_plan }}</p>
+                                {% else %}
+                                    <ul class="mb-0">
+                                        {% for item in entities.treatment_plan %}
+                                            <li>{{ item }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-muted mb-0">Not mentioned</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Vitals -->
+                    <div class="mb-4">
+                        <h5 class="text-primary">❤️ VITAL SIGNS</h5>
+                        <div class="ps-3" style="background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
+                            {% if entities.vitals %}
+                                {% if entities.vitals|stringformat:"s" == entities.vitals %}
+                                    <p class="mb-0">{{ entities.vitals }}</p>
+                                {% else %}
+                                    <div class="row">
+                                        {% for key, value in entities.vitals.items %}
+                                            <div class="col-md-3 mb-2">
+                                                <strong>{{ key|upper }}:</strong> {{ value }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-muted mb-0">Not mentioned</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">📄 AI-GENERATED CLINICAL SUMMARY</h4>
+                </div>
+                <div class="card-body">
+                    <div class="summary-content" style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745; line-height: 1.8;">
+                        {% if summary %}
+                            {{ summary|linebreaks }}
+                        {% else %}
+                            <p>No summary available</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-sm td, .table-sm th {
+        padding: 8px;
+        vertical-align: middle;
+        font-size: 13px;
+    }
+    .table-sm th {
+        background-color: #e9ecef;
+        font-weight: 600;
+    }
+    h5.text-primary {
+        font-weight: 600;
+        margin-bottom: 12px;
+        border-left: 4px solid #007bff;
+        padding-left: 12px;
+    }
+    ul {
+        margin-bottom: 0;
+        padding-left: 20px;
+    }
+    li {
+        margin-bottom: 5px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - Healthcare AI Assistant{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto text-center">
+            <h1 class="display-4 mb-4">Healthcare AI Assistant</h1>
+            <p class="lead mb-4">Powered by Groq LLM - Intelligent Medical Document Processing</p>
+            
+            {% if user.is_authenticated %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Welcome back, {{ user.username }}!</h5>
+                        <p class="card-text">Ready to process medical documents with AI assistance.</p>
+                        <a href="{% url 'upload_document' %}" class="btn btn-primary btn-lg">Upload Document</a>
+                        <a href="{% url 'document_list' %}" class="btn btn-outline-primary btn-lg">View Documents</a>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Get Started</h5>
+                        <p class="card-text">Login or create an account to start using our AI-powered medical document analysis.</p>
+                        <a href="{% url 'login' %}" class="btn btn-primary btn-lg">Login</a>
+                        <a href="{% url 'signup' %}" class="btn btn-success btn-lg">Sign Up</a>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="row mt-5">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">📄 Document Processing</h5>
+                            <p class="card-text">Upload medical documents and get AI-powered summaries, entity extraction, and structured reports.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">🤖 AI Agents</h5>
+                            <p class="card-text">Specialized agents for discharge summaries, referral letters, insurance authorizations, and lab reports.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">🔒 Secure & HIPAA Ready</h5>
+                            <p class="card-text">Built with security in mind. All processing happens server-side with proper authentication.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">⚡ Fast with Groq</h5>
+                            <p class="card-text">Powered by Groq's Llama 3.3 70B model for fast and accurate medical document analysis.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

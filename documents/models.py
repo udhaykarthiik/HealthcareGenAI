@@ -1,117 +1,71 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+import json
 
 class Document(models.Model):
     """
-    Stores uploaded medical documents (PDFs, images, etc.)
-    Each document belongs to a user (doctor/admin)
+    Model to store uploaded medical documents and AI processing results
     """
-    # Relationship: Each document belongs to one user
-    user = models.ForeignKey(
-        User, 
-        on_delete=models.CASCADE,
-        related_name='documents'
-    )
+    DOCUMENT_TYPES = [
+        ('general', 'General Medical Document'),
+        ('discharge', 'Discharge Summary'),
+        ('referral', 'Referral Letter'),
+        ('insurance', 'Insurance Authorization'),
+        ('lab_report', 'Lab Report'),
+    ]
     
-    # File storage
-    file = models.FileField(
-        upload_to='documents/%Y/%m/%d/',  # Organizes by date: documents/2025/11/20/
-        help_text='Upload medical document (PDF, JPG, PNG)'
-    )
-    
-    # Document metadata
-    original_filename = models.CharField(max_length=255, blank=True)
-    file_type = models.CharField(max_length=50, blank=True)  # 'pdf', 'jpg', etc.
-    file_size = models.IntegerField(default=0, help_text='File size in bytes')
-    
-    # Processing status
     STATUS_CHOICES = [
-        ('pending', 'Pending Processing'),
+        ('pending', 'Pending'),
         ('processing', 'Processing'),
         ('completed', 'Completed'),
         ('failed', 'Failed'),
     ]
-    status = models.CharField(
-        max_length=20, 
-        choices=STATUS_CHOICES, 
-        default='pending'
-    )
+    
+    # User who uploaded the document
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='documents')
+    
+    # File information
+    file = models.FileField(upload_to='documents/%Y/%m/%d/')
+    filename = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=10)  # pdf, jpg, png, etc.
+    document_type = models.CharField(max_length=20, choices=DOCUMENT_TYPES, default='general')
+    
+    # Document content
+    extracted_text = models.TextField(blank=True, null=True)
+    entities = models.JSONField(default=dict, blank=True)  # Store extracted entities as JSON
+    ai_summary = models.TextField(blank=True, null=True)
+    
+    # Status and metadata
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    error_message = models.TextField(blank=True, null=True)
     
     # Timestamps
-    uploaded_at = models.DateTimeField(default=timezone.now)
-    processed_at = models.DateTimeField(null=True, blank=True)
-    
-    # Extracted content (raw text from document)
-    extracted_text = models.TextField(blank=True, help_text='Raw text extracted from document')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    processed_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
-        ordering = ['-uploaded_at']  # Newest first
-        verbose_name = 'Medical Document'
-        verbose_name_plural = 'Medical Documents'
+        ordering = ['-uploaded_at']
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['uploaded_at']),
+        ]
     
     def __str__(self):
-        return f"{self.original_filename} - {self.user.username} ({self.status})"
+        return f"{self.filename} - {self.user.username} - {self.status}"
     
     def save(self, *args, **kwargs):
-        """Auto-populate filename and type on save"""
-        if self.file and not self.original_filename:
-            self.original_filename = self.file.name.split('/')[-1]
-            self.file_type = self.original_filename.split('.')[-1].lower()
-            self.file_size = self.file.size
+        # Auto-set processed_at when status changes to completed
+        if self.status == 'completed' and not self.processed_at:
+            self.processed_at = timezone.now()
         super().save(*args, **kwargs)
-
-
-class Summary(models.Model):
-    """
-    Stores AI-generated summaries for each document
-    One document can have multiple summary versions
-    """
-    # Relationship: Each summary belongs to one document
-    document = models.ForeignKey(
-        Document,
-        on_delete=models.CASCADE,
-        related_name='summaries'
-    )
     
-    # AI-generated content
-    summary_text = models.TextField(help_text='AI-generated medical summary')
-    
-    # Extracted entities (JSON format for flexibility)
-    extracted_entities = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text='Medical entities: symptoms, diagnosis, medications, etc.'
-    )
-    
-    # Summary metadata
-    model_used = models.CharField(
-        max_length=100, 
-        default='gemini-pro',
-        help_text='AI model used for generation'
-    )
-    
-    confidence_score = models.FloatField(
-        default=0.0,
-        help_text='AI confidence score (0-1)'
-    )
-    
-    # User interaction
-    is_edited = models.BooleanField(default=False)
-    edited_text = models.TextField(blank=True, help_text='User-edited version')
-    
-    # Timestamps
-    created_at = models.DateTimeField(default=timezone.now)
-    edited_at = models.DateTimeField(null=True, blank=True)
-    
-    class Meta:
-        ordering = ['-created_at']
-        verbose_name = 'AI Summary'
-        verbose_name_plural = 'AI Summaries'
-    
-    def __str__(self):
-        return f"Summary for {self.document.original_filename}"
-    
-    def get_final_text(self):
-        """Returns edited text if available, otherwise original summary"""
-        return self.edited_text if self.is_edited else self.summary_text
+    def get_entities_dict(self):
+        """Return entities as a dictionary"""
+        if isinstance(self.entities, dict):
+            return self.entities
+        try:
+            return json.loads(self.entities) if self.entities else {}
+        except:
+            return {}

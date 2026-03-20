@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Document - Healthcare AI Assistant{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <h2 class="mb-4">Upload Medical Document</h2>
+            
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="file" class="form-label">Select Document</label>
+                            <input type="file" class="form-control" id="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required>
+                            <div class="form-text">Supported formats: PDF, JPG, JPEG, PNG</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="doc_type" class="form-label">Document Type</label>
+                            <select class="form-select" id="doc_type" name="doc_type" required>
+                                <option value="general">General Medical Document</option>
+                                <option value="discharge">Discharge Summary</option>
+                                <option value="referral">Referral Letter</option>
+                                <option value="insurance">Insurance Authorization</option>
+                                <option value="lab_report">Lab Report</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Upload & Process</button>
+                        <a href="{% url 'document_list' %}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="alert alert-info mt-4">
+                <h5>📌 Note:</h5>
+                <p class="mb-0">The AI will process your document and generate a structured summary with extracted medical entities. Processing time depends on document size.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
